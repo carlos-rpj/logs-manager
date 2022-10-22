@@ -22,7 +22,7 @@ class LogServerlessFunction {
 
   start(browserWindow = null) {
     assert(browserWindow, 'BrowserWindow can\'t be null')
-    assert(this.running, 'Process is already running')
+    assert(!this.running, 'Process is already running')
 
     this.browserWindow = browserWindow
     this.running = true

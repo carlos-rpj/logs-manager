@@ -34,18 +34,34 @@ function logStart(name, info) {
     })
   }
 
-  async function handleClose() {
-    await window.serverlessAPI.logStop(name, handleLog)
-    $console.remove()
-    $tab.remove()
-  }
+  function handleClose(event) {
+    event.preventDefault()
 
-  $tab_group.appendChild($tab)
-  $tab_items.appendChild($console)
-  $tab.onclick = () => selectTab(name)
+    window.serverlessAPI.logStop(name, handleLog)
+      .then(() => {
+        const $nextTab = document.querySelector('.tab:not(.active)')
+
+        if ($tab.classList.contains('active') && $nextTab) {
+          selectTab($nextTab.classList[1])
+        }
+        
+        $console.remove()
+        $tab.remove()
+      })
+  }
   
   window.serverlessAPI.logStart(name, handleLog)
-  selectTab(name)
+    .then(() => {
+      $tab_group.appendChild($tab)
+      $tab_items.appendChild($console)
+      $tab.onclick = () => selectTab(name)
+
+      selectTab(name)
+    })
+    .catch(() => {
+      $console.remove()
+      $tab.remove()
+    })
 }
 
 function addFunction(name, info) {
@@ -79,7 +95,7 @@ function renderTab(name, onClose) {
 
   $title.innerText = name
   $close.innerText = 'x'
-  $close.onclick = onClose
+  $close.addEventListener('click', onClose)
 
   $tab.append($title, $close)
 
