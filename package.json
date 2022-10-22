@@ -1,0 +1,16 @@
+{
+  "name": "serverless-log",
+  "version": "1.0.0",
+  "main": "main.js",
+  "author": "Carlos Roberto",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^21.2.0"
+  },
+  "dependencies": {
+    "yaml": "^2.1.3"
+  }
+}

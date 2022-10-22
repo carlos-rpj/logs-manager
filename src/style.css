@@ -1,0 +1,76 @@
+* {
+  font-family: monospace;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  color: white;
+}
+
+#sidebar {
+  height: 100vh;
+  width: 300px;
+  background: #2a2a2a;
+}
+
+#sidebar > h2 {
+  padding: 20px 14px;
+  border-bottom: thin solid #333;
+}
+
+#sidebar .func {
+  width: 100%;
+  padding: 14px;
+  border-bottom: thin solid #333;
+  transition: background-color ease-out 100ms;
+  cursor: pointer;
+}
+
+#sidebar .func:hover {
+  background-color: #333;
+}
+
+#sidebar .func h3 {
+  margin-bottom: 8px;
+}
+
+#sidebar .func p {
+  color: #aaa
+}
+
+#console {
+  flex: 1;
+  height: 100vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background-color: #202020;
+}
+
+#console > div.log {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  padding-right: 8px;
+  border-left: 4px solid transparent;
+}
+
+#console > div.log:hover {
+  border-left: 4px solid #888;
+}
+
+#console > div.log > div.line {
+  color: #888;
+}
+
+#console > div.log > div.json {
+  transition: background-color ease-out 100ms;
+}
+
+#console > div.log > div.json:hover {
+  background-color: #303030;
+}
