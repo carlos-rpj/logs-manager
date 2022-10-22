@@ -3,43 +3,29 @@ const path = require('path')
 const fs = require('fs')
 
 const { spawn } = require('node:child_process');
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron');
+const assert = require('assert');
 
 const PROJECT_PATH = '/home/carlos/Documents/maqplan/Projetos/maqplug'
 let proccessLog = null
-
-function createWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
-  })
-
-  mainWindow.loadFile('src/index.html')
-
-  const log = new LogServerlessFunction(mainWindow, 'dequeue')
-  log.start()
-
-  mainWindow.webContents.openDevTools()
-}
 
 class LogServerlessFunction {
   process = null
   aws_profile = 'qas-maqplan'
   stage = 'dev'
 
-  constructor(browserWindow, name) {
-    this.browserWindow = browserWindow
+  constructor(name, info) {
     this.name = name
+    this.info = info
   }
 
-  start() {
+  start(browserWindow = null) {
+    assert(browserWindow, 'BrowserWindow can\'t be null')
+    
+    this.browserWindow = browserWindow
+
     try {
       const params = ['logs', '-t', '--aws-profile', this.aws_profile, '--stage', this.stage, '-f', this.name];
-
-      console.log(params)
 
       this.process = spawn('sls', params, { cwd: PROJECT_PATH });
       this.process.stdout.on('data', this.onMessage.bind(this));
@@ -66,6 +52,35 @@ class LogServerlessFunction {
   onError(data) {
     console.error(data.toString());
   }
+}
+
+const logs = new Map(Object.entries(getLambdaFunctions()).map(data => {
+  const [name, info] = data
+  return [name, new LogServerlessFunction(name, info)]
+}))
+
+function createWindow() {
+  const mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+
+  mainWindow.loadFile('src/index.html')
+
+  ipcMain.handle('log:start', (event, name) => {
+    console.info('LOG STARTED', name)
+    logs.get(name).start(mainWindow)
+  })
+  
+  ipcMain.handle('log:stop', (event, name) => {
+    console.info('LOG STOPED', name)
+    logs.get(name).stop()
+  })
+
+  mainWindow.webContents.openDevTools()
 }
 
 function getLambdaFunctions() {
