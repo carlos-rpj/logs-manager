@@ -1,6 +1,6 @@
-const $console = document.getElementById('console')
 const $sidebar = document.getElementById('sidebar')
 const $tab_group = document.querySelector('.tab-group')
+const $tab_items = document.querySelector('.tab-items')
 
 window.serverlessAPI.functions().then(functions => {
   Object.entries(functions).forEach(([name, info]) => {
@@ -8,18 +8,44 @@ window.serverlessAPI.functions().then(functions => {
   });
 })
 
+function selectTab(name) {
+  const $tab = document.querySelector(`.tab.${name}`)
+  const $console = document.querySelector(`.console.${name}`)
+
+  if (!$tab.classList.contains('active')) {
+    document.querySelector(`.tab.active`)?.classList.remove('active')
+    document.querySelector(`.console.active`)?.classList.remove('active')
+
+    $tab.classList.add('active')
+    $console.classList.add('active')
+  }
+}
+
 function logStart(name, info) {
+  const $console = renderConsole(name, info)
+  const $tab = renderTab(name, handleClose)
+  
   function handleLog(event, data) {
-    addLog(data)
+    const $log = renderLog(data)
+    $console.appendChild($log)
+    $console.scrollBy({
+      top: $console.scrollHeight,
+      behavior: 'smooth',
+    })
   }
 
-  window.serverlessAPI.logStart(name, handleLog)
-
-  const $tab = renderTab(name, () => {
-    window.serverlessAPI.logStop(name, handleLog)
-  })
+  async function handleClose() {
+    await window.serverlessAPI.logStop(name, handleLog)
+    $console.remove()
+    $tab.remove()
+  }
 
   $tab_group.appendChild($tab)
+  $tab_items.appendChild($console)
+  $tab.onclick = () => selectTab(name)
+  
+  window.serverlessAPI.logStart(name, handleLog)
+  selectTab(name)
 }
 
 function addFunction(name, info) {
@@ -37,15 +63,10 @@ function renderFunction(name, info) {
   $title.innerText = name
   $description.innerText = info.description
   
-  $container.classList = ['func']
+  $container.classList.add('func')
   $container.append($title, $description)
 
   return $container
-}
-
-function addLog(data) {
-  const logElement = renderLog(data)
-  $console.appendChild(logElement)
 }
 
 function renderTab(name, onClose) {
@@ -53,46 +74,49 @@ function renderTab(name, onClose) {
   const $title = document.createElement('span')
   const $close = document.createElement('div')
 
-  $close.classList = ['close']
-  $tab.classList = ['tab']
+  $close.classList.add('close')
+  $tab.classList.add('tab', name)
 
   $title.innerText = name
   $close.innerText = 'x'
-  $close.onclick = () => {
-    onClose()
-    $tab.remove()
-  }
+  $close.onclick = onClose
 
   $tab.append($title, $close)
 
   return $tab
 }
 
-function renderLog(log) {
-  const div = document.createElement('div')
+function renderConsole(name, info) {
+  const $container = document.createElement('div')
+  $container.classList.add('console', name)
+  return $container
+}
 
-  div.classList = ['log']
+function renderLog(log) {
+  const $container = document.createElement('pre')
+
+  $container.classList.add('log')
 
   log.split('\n').forEach(lineText => {
     const line = renderLine(lineText)
-    div.appendChild(line)
+    $container.appendChild(line)
   });
 
-  return div
+  return $container
 }
 
 function renderLine(text) {
-  const div = document.createElement('div')
+  const $line = document.createElement('div')
 
   if (isJsonString(text)) {
-    div.innerText = text
-    div.classList = ['json']
+    $line.innerText = text
+    $line.classList.add('json')
   } else {
-    div.innerText = text
-    div.classList = ['line']
+    $line.innerText = text
+    $line.classList.add('line')
   }
 
-  return div
+  return $line
 }
 
 function isJsonString(str) {

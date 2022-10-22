@@ -13,6 +13,7 @@ class LogServerlessFunction {
   process = null
   aws_profile = 'qas-maqplan'
   stage = 'dev'
+  running = false
 
   constructor(name, info) {
     this.name = name
@@ -21,8 +22,10 @@ class LogServerlessFunction {
 
   start(browserWindow = null) {
     assert(browserWindow, 'BrowserWindow can\'t be null')
-    
+    assert(this.running, 'Process is already running')
+
     this.browserWindow = browserWindow
+    this.running = true
 
     try {
       const params = ['logs', '-t', '--aws-profile', this.aws_profile, '--stage', this.stage, '-f', this.name];
@@ -32,6 +35,7 @@ class LogServerlessFunction {
       this.process.stderr.on('data', this.onError.bind(this));
   
       this.process.on('exit', (code) => {
+        this.running = false
         console.log(`Child exited with code ${code}`);
       });
   
