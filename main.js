@@ -6,7 +6,6 @@ const { spawn } = require('node:child_process');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const assert = require('assert');
 
-const PROJECT_PATH = '/home/carlos/Documents/maqplan/Projetos/maqplug'
 let proccessLog = null
 
 class LogServerlessFunction {
@@ -30,7 +29,7 @@ class LogServerlessFunction {
     try {
       const params = ['logs', '-t', '--aws-profile', this.aws_profile, '--stage', this.stage, '-f', this.name];
 
-      this.process = spawn('sls', params, { cwd: PROJECT_PATH });
+      this.process = spawn('sls', params, { cwd: process.env.PROJECT_PATH });
       this.process.stdout.on('data', this.onMessage.bind(this));
       this.process.stderr.on('data', this.onError.bind(this));
   
