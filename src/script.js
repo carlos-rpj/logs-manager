@@ -2,7 +2,7 @@ const $sidebar = document.getElementById('sidebar')
 const $tab_group = document.querySelector('.tab-group')
 const $tab_items = document.querySelector('.tab-items')
 
-window.serverlessAPI.functions().then(functions => {
+window.serverlessAPI.onStart((event, functions) => {
   Object.entries(functions).forEach(([name, info]) => {
     addFunction(name, info)
   });

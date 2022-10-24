@@ -3,16 +3,15 @@ const path = require('path')
 const fs = require('fs')
 
 const { spawn } = require('node:child_process');
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const assert = require('assert');
-
-let proccessLog = null
 
 class LogServerlessFunction {
   process = null
   aws_profile = 'qas-maqplan'
   stage = 'dev'
   running = false
+  projectPath = './'
 
   constructor(name, info) {
     this.name = name
@@ -20,16 +19,16 @@ class LogServerlessFunction {
   }
 
   start(browserWindow = null) {
-    assert(browserWindow, 'BrowserWindow can\'t be null')
-    assert(!this.running, 'Process is already running')
-
-    this.browserWindow = browserWindow
-    this.running = true
-
     try {
+      assert(browserWindow, 'BrowserWindow can\'t be null')
+      assert(!this.running, 'Process is already running')
+
+      this.browserWindow = browserWindow
+      this.running = true
+
       const params = ['logs', '-t', '--aws-profile', this.aws_profile, '--stage', this.stage, '-f', this.name];
 
-      this.process = spawn('sls', params, { cwd: process.env.PROJECT_PATH });
+      this.process = spawn('sls', params, { cwd: this.projectPath });
       this.process.stdout.on('data', this.onMessage.bind(this));
       this.process.stderr.on('data', this.onError.bind(this));
   
@@ -57,12 +56,9 @@ class LogServerlessFunction {
   }
 }
 
-const logs = new Map(Object.entries(getLambdaFunctions()).map(data => {
-  const [name, info] = data
-  return [name, new LogServerlessFunction(name, info)]
-}))
+const logs = new Map()
 
-function createWindow() {
+async function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -83,18 +79,36 @@ function createWindow() {
     logs.get(name).stop()
   })
 
+  ipcMain.handle('dialog:openProject', () => {
+    const [projectPath] = dialog.showOpenDialogSync(mainWindow, {
+      properties: ['openDirectory']
+    });
+
+    const functions = getLambdaFunctions(projectPath)
+
+    Object.entries(functions).forEach(data => {
+      const [name, info] = data
+      const log = new LogServerlessFunction(name, info)
+
+      log.projectPath = projectPath
+      logs.set(name, log)
+    })
+
+    mainWindow.webContents.send('list:functions', functions)
+  })
+
   mainWindow.webContents.openDevTools()
 }
 
-function getLambdaFunctions() {
-  const file = fs.readFileSync(`${PROJECT_PATH}/serverless.yml`, 'utf8')
+function getLambdaFunctions(path) {
+  const file = fs.readFileSync(`${path}/serverless.yml`, 'utf8')
   const serverless_yaml = YAML.parse(file);
 
   return serverless_yaml.functions;
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle('list:functions', getLambdaFunctions)
+  ipcMain.handle('list:functions', (e, path) => getLambdaFunctions(path))
 
   createWindow()
 
@@ -108,6 +122,5 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
-    proccessLog?.kill()
   }
 })
